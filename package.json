@@ -1,0 +1,15 @@
+{
+	"name": "unsplash-cli",
+	"version": "0.0.1",
+
+	"description": "A simple command-line tool for downloading Unsplash pictures",
+	"author": "Ladislas de Toldi",
+	"engines": {
+		"node": ">=0.10"
+	},
+	"dependencies": {
+	},
+	"bin": {
+		"unsplash": "unsplash.js"
+	}
+}
