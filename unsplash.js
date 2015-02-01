@@ -27,7 +27,7 @@ var installQuestions = [{
 fs.open(databasePath, 'r', function (err, fd){
 	if (err) {
 		console.log(installQuestions[0].premessage);
-		inquirer.prompt( installQuestions, function( answers ) {
+		inquirer.prompt(installQuestions, function(answers) {
 			if (answers.installDatabase) {
 				fs.mkdirs(unsplashPath, function(err) {
 					if (err) return console.error(err);
@@ -42,8 +42,9 @@ fs.open(databasePath, 'r', function (err, fd){
 					else {
 						console.log("\nUnable to download the database, make sure you are connected to the internet...");
 					}
-				})
+				});
 			}
+			else return;
 		});
 	}
 });
@@ -58,7 +59,17 @@ program
 .command('update')
 .description('update image database')
 .action(function(){
-	console.log('update image database');
+	request(unsplashUrl.database, function (error, response, body) {
+		if (!error && response.statusCode == 200) {
+			fs.writeFile(databasePath, body, function (err) {
+				if (err) console.log("\nUnable to write the file, make sure it does not already exist...");
+				else console.log("\nThe database has been successfully updated, you can now enjoy new pictures!")
+			});
+		}
+		else {
+			console.log("\nUnable to update the database, make sure you are connected to the internet...");
+		}
+	});
 });
 
 // Program Download Images
