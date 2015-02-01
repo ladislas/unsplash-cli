@@ -1,15 +1,24 @@
 {
-	"name": "unsplash-cli",
-	"version": "0.0.1",
-
-	"description": "A simple command-line tool for downloading Unsplash pictures",
-	"author": "Ladislas de Toldi",
-	"engines": {
-		"node": ">=0.10"
-	},
-	"dependencies": {
-	},
-	"bin": {
-		"unsplash": "unsplash.js"
-	}
+  "name": "unsplash-cli",
+  "version": "0.2.0",
+  "description": "A simple command-line tool for downloading Unsplash pictures",
+  "author": "Ladislas de Toldi",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ladislas/unsplash-cli"
+  },
+  "engines": {
+    "node": ">=0.10"
+  },
+  "dependencies": {
+    "chalk": "^0.5.1",
+    "commander": "^2.6.0",
+    "fs-extra": "^0.16.3",
+    "inquirer": "^0.8.0",
+    "request": "^2.51.0",
+    "user-home": "^1.1.1"
+  },
+  "bin": {
+    "unsplash": "unsplash.js"
+  }
 }
