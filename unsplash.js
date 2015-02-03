@@ -7,10 +7,17 @@ var homeFolder = require('user-home');
 var program = require('commander');
 var request = require('request');
 var inquirer = require('inquirer');
+var clipboard = require('copy-paste');
+var chalk = require('chalk');
 
 // Global variables
 var unsplashPath = path.resolve(homeFolder + '/.unsplash-cli');
 var databasePath = path.resolve(unsplashPath + '/database.json');
+
+var databaseContent;
+var databaseJson;
+var lastId;
+
 var unsplashUrl = {
 	root: "https://unsplash.it/",
 	database: "https://unsplash.it/list",
@@ -38,7 +45,7 @@ var installQuestions = [{
 	default: false
 }];
 
-fs.open(databasePath, 'r', function (err, fd){
+fs.readFile(databasePath, 'utf8', function (err, data){
 	if (err) {
 		console.log(installQuestions[0].premessage);
 		inquirer.prompt(installQuestions, function(answers) {
@@ -49,24 +56,29 @@ fs.open(databasePath, 'r', function (err, fd){
 				request(unsplashUrl.database, function (error, response, body) {
 					if (!error && response.statusCode == 200) {
 						fs.writeFile(databasePath, body, function (err) {
-							if (err) console.log("\nUnable to write the file, make sure it does not already exist...");
-							else console.log("\nThe database has been successfully saved, you can now use unsplash-cli!")
+							if (err) console.log(chalk.red("\nUnable to write the database, make sure it is not already in use."));
+							else console.log(chalk.green("\nThe database has been successfully saved, you can now use unsplash-cli!"));
 						});
 					}
 					else {
-						console.log("\nUnable to download the database, make sure you are connected to the internet...");
+						console.log(chalk.red("\nUnable to download the database, make sure you are connected to the internet..."));
 					}
 				});
 			}
-			else return;
+			else process.exit();
 		});
+	}
+	else {
+		databaseContent = data;
+		databaseJson = JSON.parse(databaseContent);
+		lastId = databaseJson[databaseJson.length-1].id;
 	}
 });
 
 // Load database and get last id
-var databaseContent = fs.readFileSync(databasePath, 'utf8');
-var databaseJson = JSON.parse(databaseContent);
-var lastId = databaseJson[databaseJson.length-1].id;
+// var databaseContent = fs.readFileSync(databasePath, 'utf8');
+// var databaseJson = JSON.parse(databaseContent);
+// var lastId = databaseJson[databaseJson.length-1].id;
 
 function randomImage() {
 	return random(0, lastId);
@@ -85,12 +97,12 @@ program
 	request(unsplashUrl.database, function (error, response, body) {
 		if (!error && response.statusCode == 200) {
 			fs.writeFile(databasePath, body, function (err) {
-				if (err) console.log("\nUnable to write the file, make sure it does not already exist...");
-				else console.log("\nThe database has been successfully updated, you can now enjoy new pictures!")
+				if (err) console.log(chalk.red("\nUnable to write the new database, make sure it is not already in use."));
+				else console.log(chalk.green("\nThe database has been successfully updated, you can now enjoy your new pictures!"))
 			});
 		}
 		else {
-			console.log("\nUnable to update the database, make sure you are connected to the internet...");
+			console.log(chalk.red("\nUnable to update the new database, make sure you are connected to the internet."));
 		}
 	});
 });
@@ -104,7 +116,8 @@ program
 .option("-f, --full", "full size image")
 .option("-s, --size <width>,<height>", "image size in pixels - default is 300,200", splitList, [300,200])
 .option("-p, --path [path]", "where the image should be stored", "./")
-.option("-n, --name [name]", "image name")
+.option("-I, --image-name [name]", "image name")
+.option("-l, --link", "get picture link and copy to clipboard")
 .action(function(options){
 	var imageUrl;
 	var imageName;
@@ -117,7 +130,8 @@ program
 		imageId = randomImage();
 	}
 	else {
-		console.log("You must specify an image id or choose a random one..."); return;
+		console.log(chalk.red("\nYou must specify an image --id or choose a --random one"));
+		return;
 	}
 
 	if (options.full) {
@@ -130,8 +144,8 @@ program
 		imageUrl = databaseJson[imageId].post_url + "/download";
 	}
 
-	if (options.name) {
-		imageName = options.name + "." + databaseJson[imageId].format;
+	if (options.imageName) {
+		imageName = options.imageName + "." + databaseJson[imageId].format;
 	}
 	else {
 		imageName = databaseJson[imageId].filename;
@@ -155,6 +169,13 @@ program
 			// console.log("\nUnable to save the picture %s to %s, please make sure you are connected to the internet and try again...", options.id, options.path);
 		}
 	});
+
+	if (options.link) {
+		clipboard.copy(imageUrl, function (err) {
+			if (err) console.log("Unable to copy the link to clipboard...");
+			else console.log("Link successfully copied to clipboard");
+		})
+	}
 });
 
 
