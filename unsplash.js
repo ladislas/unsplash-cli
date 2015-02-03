@@ -174,6 +174,46 @@ fs.readFile(databasePath, 'utf8', function (err, data){
 
 
 		// Program Get Link To Image
+		program
+			.command('link')
+			.description('get link to image')
+			.option("-i, --id [id]", "set image id")
+			.option("-r, --random", "get random image id")
+			.option("-f, --full", "full size image")
+			.option("-s, --size <width>,<height>", "image size in pixels - default is 300,200", splitList, [300,200])
+			.action(function(options){
+
+				var imageUrl;
+				var imageName;
+				var imageId;
+
+				if (options.id) {
+					imageId = options.id;
+				}
+				else if (options.random) {
+					imageId = randomImage();
+				}
+				else {
+					console.log(chalk.red("\nYou must specify an image --id or choose a --random one"));
+					return;
+				}
+
+				if (options.full) {
+					imageUrl = databaseJson[imageId].post_url + "/download";
+				}
+				else if (options.size) {
+					imageUrl = unsplashUrl.root + options.size[0] + "/" + options.size[1] + "?image=" + imageId;
+				}
+				else {
+					imageUrl = databaseJson[imageId].post_url + "/download";
+				}
+
+				clipboard.copy(imageUrl, function (err) {
+					if (err) console.log(chalk.red("\nUnable to copy the link to clipboard..."));
+					else console.log(chalk.green("\nThe following link has been successfully copied to clipboard:\n\n\t", imageUrl));
+				})
+			});
+
 
 		// Program Set Deskop With Image
 		program
