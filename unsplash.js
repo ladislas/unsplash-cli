@@ -2,6 +2,7 @@
 
 // General dependencies
 var fs = require('fs-extra');
+var exec = require('child_process').exec;
 var path = require('path');
 var homeFolder = require('user-home');
 var program = require('commander');
@@ -218,34 +219,77 @@ fs.readFile(databasePath, 'utf8', function (err, data){
 		// Program Set Deskop With Image
 		program
 			.command('desktop')
-			.description('get image link')
-			.option("-i, --id [value]", "get image with id")
-			.option("-r, --random", "get a random image")
-			.option("-p, --path [path]", "path to directory to store the image")
-			.option("-s, --size <width> <height>", "choose image size")
-			.action(function(id, options){
-				console.log('Download image with id %s to %s', id, options.path);
-			});
+			.description('set image as desktop')
+			.option("-i, --id [id]", "set image id")
+			.option("-r, --random", "get random image id")
+			.option("-f, --full", "full size image")
+			.option("-s, --size <width>,<height>", "image size in pixels - default is 300,200", splitList)
+			.option("-p, --path [path]", "where the image should be stored", unsplashPath)
+			.option("-I, --image-name [name]", "image name")
+			.option("-l, --link", "get picture link and copy to clipboard")
+			.action(function(options){
 
-		program
-			.command('exec <cmd>')
-			.alias('ex')
-			.description('execute the given remote cmd')
-			.option("-e, --exec_mode <mode>", "Which exec mode to use")
-			.action(function(cmd, options){
-				console.log('exec "%s" using %s mode', cmd, options.exec_mode);
-			}).on('--help', function() {
-				console.log('  Examples:');
-				console.log();
-				console.log('    $ deploy exec sequential');
-				console.log('    $ deploy exec async');
-				console.log();
-			});
+				var imageUrl;
+				var imageName;
+				var imageId;
 
-		program
-			.command('*')
-			.action(function(env){
-				console.log('deploying "%s"', env);
+				if (options.id) {
+					imageId = options.id;
+				}
+				else if (options.random) {
+					imageId = randomImage();
+				}
+				else {
+					console.log(chalk.red("\nYou must specify an image --id or choose a --random one"));
+					return;
+				}
+
+				if (options.size) {
+					imageUrl = unsplashUrl.root + options.size[0] + "/" + options.size[1] + "?image=" + imageId;
+				}
+				else {
+					imageUrl = databaseJson[imageId].post_url + "/download";
+				}
+
+				if (options.imageName) {
+					imageName = options.imageName + "." + databaseJson[imageId].format;
+				}
+				else if (options.pathname === unsplashPath) {
+					imageName = "desktop-image" + "." + databaseJson[imageId].format;
+				}
+				else {
+					imageName = "desktop-image_" + databaseJson[imageId].id + "." + databaseJson[imageId].format;
+				}
+
+				var imageDirPath = sanitizePath(options.path);
+				var imagePath = path.join(imageDirPath, imageName);
+
+				request(imageUrl, {encoding: 'binary'}, function (error, response, body) {
+					if (!error && response.statusCode == 200) {
+						fs.mkdirs(imageDirPath, function (err) {
+							if(err) console.log(chalk.red("\nUnable to create the directory to store the image, make sure you have the right permissions."), imageDirPath);
+						})
+						fs.writeFile(imagePath, body, 'binary', function (err) {
+							if (err) console.log(chalk.red("\nUnable to save the image %s to %s, please try again."), imageId, imagePath);
+							else {
+								var script = "sqlite3 ~/Library/Application\\ Support/Dock/desktoppicture.db \"update data set value = \'" + imagePath + "\'\" && killall Dock";
+								exec(script, function (error, stdout, stderr){
+								console.log(chalk.green("\nThe image %s has been successfully saved to %s and set as your desktop image!"), imageId, imagePath);
+								});
+							}
+						});
+					}
+					else {
+						console.log(chalk.red("\nUnable to save image %s to %s, from %s, please make sure you are connected to the internet and try again."), imageId, imagePath, imageUrl);
+					}
+				});
+
+				if (options.link) {
+					clipboard.copy(imageUrl, function (err) {
+						if (err) console.log(chalk.red("\nUnable to copy the link to clipboard..."));
+						else console.log(chalk.green("\nLink successfully copied to clipboard"));
+					})
+				}
 			});
 
 		program.parse(process.argv);
