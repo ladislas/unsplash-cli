@@ -156,7 +156,7 @@ fs.readFile(databasePath, 'utf8', function (err, data){
 							if(err) console.log(chalk.red("\nUnable to create the directory to store the image, make sure you have the right permissions."), imageDirPath);
 						})
 						fs.writeFile(imagePath, body, 'binary', function (err) {
-							if (err) console.log(chalk.red("\nUnable to save the image %s to %s, from %s, please try again."), imageId, imagePath);
+							if (err) console.log(chalk.red("\nUnable to save the image %s to %s, please try again."), imageId, imagePath);
 							else console.log(chalk.green("\nThe image %s has been successfully saved to %s from %s!"), imageId, imagePath);
 						});
 					}
