@@ -37,7 +37,7 @@ function random(low, high) {
 
 
 // Prepare inquirer questions
-var installQuestions = [{
+var firstTimeQuestion = [{
 	type: "confirm",
 	name: "installDatabase",
 	premessage: "\nHi! And thank you very much for using unsplash-cli.\n\nIt seems to be your first time using this incredible tool.\nTo begin with, we need to download the picture database to\n\n\t" + databasePath + "\n",
@@ -48,8 +48,8 @@ var installQuestions = [{
 // Launch cli
 fs.readFile(databasePath, 'utf8', function (err, data){
 	if (err) {
-		console.log(installQuestions[0].premessage);
-		inquirer.prompt(installQuestions, function(answers) {
+		console.log(firstTimeQuestion[0].premessage);
+		inquirer.prompt(firstTimeQuestion, function(answers) {
 			if (answers.installDatabase) {
 				fs.mkdirs(unsplashPath, function(err) {
 					if (err) return console.error(err);
@@ -93,7 +93,21 @@ fs.readFile(databasePath, 'utf8', function (err, data){
 					if (!error && response.statusCode == 200) {
 						fs.writeFile(databasePath, body, function (err) {
 							if (err) console.log(chalk.red("\nUnable to write the new database, make sure it is not already in use."));
-							else console.log(chalk.green("\nThe database has been successfully updated, you can now enjoy your new pictures!"))
+							else {
+								var oldLastId = lastId;
+								var newLastId;
+
+								fs.readFile(databasePath, 'utf8', function (err, data){
+									if (err) console.log(err);
+									else {
+										databaseContent = data;
+										databaseJson = JSON.parse(databaseContent);
+										newLastId = databaseJson[databaseJson.length-1].id;
+										newPics = newLastId - oldLastId;
+										console.log(chalk.green("\nThe database has been successfully updated, you can now enjoy your new %s pictures, from id %s to %s!"), newPics, oldLastId + 1, newLastId);
+									}
+								});
+							}
 						});
 					}
 					else {
@@ -274,7 +288,7 @@ fs.readFile(databasePath, 'utf8', function (err, data){
 							else {
 								var script = "sqlite3 ~/Library/Application\\ Support/Dock/desktoppicture.db \"update data set value = \'" + imagePath + "\'\" && killall Dock";
 								exec(script, function (error, stdout, stderr){
-								console.log(chalk.green("\nThe image %s has been successfully saved to %s and set as your desktop image!"), imageId, imagePath);
+									console.log(chalk.green("\nThe image %s has been successfully saved to %s and set as your desktop image!"), imageId, imagePath);
 								});
 							}
 						});
